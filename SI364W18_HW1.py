@@ -5,28 +5,34 @@
 #################################
 
 ## List below here, in a comment/comments, the people you worked with on this assignment AND any resources you used to find code (50 point deduction for not doing so). If none, write "None".
-
+## Name: Suhas Maganti
+## Resources used: Past lectures and labs
 
 
 ## [PROBLEM 1] - 150 points
 ## Below is code for one of the simplest possible Flask applications. Edit the code so that once you run this application locally and go to the URL 'http://localhost:5000/class', you see a page that says "Welcome to SI 364!"
-
-from flask import Flask
+import requests
+import json
+from flask import Flask, request
 app = Flask(__name__)
 app.debug = True
 
 @app.route('/')
 def hello_to_you():
-    return 'Hello!'
+	return 'Hello!'
 
-
-if __name__ == '__main__':
-    app.run()
-
+@app.route('/class')
+def welcome():
+	return 'Welcome to SI 364!'
 
 ## [PROBLEM 2] - 250 points
 ## Edit the code chunk above again so that if you go to the URL 'http://localhost:5000/movie/<name-of-movie-here-one-word>' you see a big dictionary of data on the page. For example, if you go to the URL 'http://localhost:5000/movie/ratatouille', you should see something like the data shown in the included file sample_ratatouille_data.txt, which contains data about the animated movie Ratatouille. However, if you go to the url http://localhost:5000/movie/titanic, you should get different data, and if you go to the url 'http://localhost:5000/movie/dsagdsgskfsl' for example, you should see data on the page that looks like this:
 
+@app.route('/movie/<moviename>')
+def movie(moviename):
+	r = requests.get("https://itunes.apple.com/search?media=movie&term={}".format(moviename))
+	return r.text
+	
 # {
 #  "resultCount":0,
 #  "results": []
@@ -45,6 +51,20 @@ if __name__ == '__main__':
 ## Once you enter a number and submit it to the form, you should then see a web page that says "Double your favorite number is <number>". For example, if you enter 2 into the form, you should then see a page that says "Double your favorite number is 4". Careful about types in your Python code!
 ## You can assume a user will always enter a number only.
 
+@app.route('/question',methods=["GET","POST"])
+def number():
+	formstring = """
+	<form action="http://localhost:5000/question" method='POST'>
+Enter your favorite number:<br>
+<input type="number" name="num"><br>
+<input type="submit" value="Submit">
+"""
+	if request.method == "POST":
+		entered = request.form.get('num', "")
+		double = int(entered)*2
+		return "Double your favorite number is {}".format(double)
+	else:
+		return formstring
 
 ## [PROBLEM 4] - 350 points
 
@@ -65,3 +85,31 @@ if __name__ == '__main__':
 # You can assume that a user will give you the type of input/response you expect in your form; you do not need to handle errors or user confusion. (e.g. if your form asks for a name, you can assume a user will type a reasonable name; if your form asks for a number, you can assume a user will type a reasonable number; if your form asks the user to select a checkbox, you can assume they will do that.)
 
 # Points will be assigned for each specification in the problem.
+@app.route('/problem4form')
+def form():
+    return """
+	<form action="http://localhost:5000/result" method='GET'>
+
+Choose type of Media (Pick 1):<br>
+<input type="checkbox" name="movie" value="movie">Movie<br>
+<input type="checkbox" name="music" value="music">Music<br>
+<input type="checkbox" name="tvshow" value="tvShow">TV Show<br>
+Enter the name:<br>
+<input type="text" name="name"><br>
+<input type="submit" value="Submit">
+</form>
+"""
+
+@app.route('/result',methods=["GET"])
+def result_form1():
+	if request.method == "GET":
+		lis = []
+		for k in request.args:
+			lis.append(request.args.get(k,""))
+		r = requests.get("https://itunes.apple.com/search?media={}&term={}".format(lis[0],lis[1]))
+		return r.text["results"][0]["longDescription"]
+	else:
+		return "Nothing was selected this time!"
+
+if __name__ == "__main__":
+	app.run(use_reloader=True, debug=True)
